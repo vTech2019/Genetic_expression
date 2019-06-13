@@ -153,9 +153,11 @@
   <ItemGroup>
     <ClCompile Include="Genetic_expression.cpp" />
     <ClCompile Include="Tree.cpp" />
+    <ClCompile Include="Tree_function.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tree.h" />
+    <ClInclude Include="Tree_function.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

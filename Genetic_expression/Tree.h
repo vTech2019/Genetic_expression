@@ -1,7 +1,8 @@
 #define _PSOC_ 
 #include <stdlib.h>
 #include <stdio.h>
-enum list_stage { OPEN_BRACKET, OPERATION, NUMBER, CLOSE_BRACKET };
+#include <math.h>
+enum list_stage { OPEN_BRACKET = 1, OPERATION = 2, NUMBER = 4, CLOSE_BRACKET = 8 };
 enum symbols { a = 97, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z = 122 };
 enum list_operation { MINUS = 45, PLUS = 43, MULTIPLY = 42, DIVIDE = 47 };
 
@@ -35,11 +36,19 @@ class Tree
 	Node<float>* root;
 	size_t length_expression;
 	bool flip(float number);
+	float parse_number(unsigned char* string);
+	float* bound_check_numbers(float* ptr_numbers, float* numbers, size_t length_numbers);
 	unsigned char* bound_check_expression(unsigned char* ptr_expression);
+	float calculate_numbers(float number_1, float number_2, int operation);
+	unsigned char* string_current_stage(unsigned char* ptr_expression, Node<float>* current_position);
 public:
-	void gen_random_tree();
+	void set_expression(unsigned char* expression, size_t length_expression);
+	void gen_random_tree(size_t max_length);
 	unsigned char* view_tree();
+	float calculate_tree();
 	Tree();
 	~Tree();
 };
+
+
 

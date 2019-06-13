@@ -5,14 +5,23 @@
 #include "Tree.h"
 int main()
 {
-	Tree tree[10];
-	for (size_t i = 0; i < 10; i++) {
-
-		tree[i].gen_random_tree();
-		std::cout << tree[i].view_tree();
+	Tree function;
+	function.set_expression((unsigned char*) "((5-(5-7))+(5/(7/5))", sizeof("((5-(5-7))+(5/(7/5))")-1);
+	Tree* tree = new Tree[1000];
+	for (size_t i = 0; i < 1000; i++) {
+	//
+		tree[i].gen_random_tree(256);
+		std::cout<<tree[i].view_tree()<<std::endl;
+		std::cout << tree[i].calculate_tree()<<std::endl;
 	}
-
+	delete[] tree;
+	while(true)
     std::cout << "Hello World!\n";
+	std::cout << "Hello World!\n";
+	std::cout << "Hello World!\n";
+	std::cout << "Hello World!\n";
+	std::cout << "Hello World!\n";
+	std::cout << "Hello World!\n";
 }
 
 // Запуск программы: CTRL+F5 или меню "Отладка" > "Запуск без отладки"
