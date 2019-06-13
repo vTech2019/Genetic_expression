@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-enum list_stage { OPEN_BRACKET = 1, OPERATION = 2, NUMBER = 4, CLOSE_BRACKET = 8 };
+enum list_stage { OPEN_BRACKET = 1, OPERATION = 2, NUMBER = 4, CLOSE_BRACKET = 8, SYMBOL = 16 };
 enum symbols { a = 97, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z = 122 };
 enum list_operation { MINUS = 45, PLUS = 43, MULTIPLY = 42, DIVIDE = 47 };
 
@@ -42,10 +42,11 @@ class Tree
 	float calculate_numbers(float number_1, float number_2, int operation);
 	unsigned char* string_current_stage(unsigned char* ptr_expression, Node<float>* current_position);
 public:
-	void set_expression(unsigned char* expression, size_t length_expression);
-	void gen_random_tree(size_t max_length);
+	void set_expression(unsigned char* expression, size_t length_expression, unsigned char* symbols, size_t number_symbols);
+	void gen_random_tree(size_t max_length, unsigned char* symbols, size_t length_symbols);
 	unsigned char* view_tree();
-	float calculate_tree();
+	float calculate_tree(float* value_arguments, unsigned char* arguments, size_t number_arguments);
+	//float calculate_tree();
 	Tree();
 	~Tree();
 };

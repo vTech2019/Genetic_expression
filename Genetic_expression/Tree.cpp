@@ -34,7 +34,7 @@ float Tree::parse_number(unsigned char* string) {
 	}
 	return result;
 }
-void Tree::set_expression(unsigned char* expression, size_t length_expression)
+void Tree::set_expression(unsigned char* expression, size_t length_expression, unsigned char* symbols, size_t number_symbols)
 {
 	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
 	unsigned char* start_expression = expression;
@@ -68,10 +68,20 @@ void Tree::set_expression(unsigned char* expression, size_t length_expression)
 		}
 		else {
 			float number = parse_number(start_expression);
-			if (!isnan(number)) {
+			unsigned char* find_symbol = NULL;
+			for (size_t i = 0; i < number_symbols && !find_symbol; i++)
+				find_symbol = symbols[i] == *start_expression ? symbols + i : NULL;
+
+			if (!isnan(number) || find_symbol) {
 				if (stage && NUMBER) {
 					stage = OPERATION | CLOSE_BRACKET;
-					Node<float>* current = new Node<float>(number, NUMBER, NULL, NULL, current_position);
+					Node<float>* current;
+					if (find_symbol) {
+						current = new Node<float>(*find_symbol, SYMBOL, NULL, NULL, current_position);
+					}
+					else {
+						current = new Node<float>(number, NUMBER, NULL, NULL, current_position);
+					}
 					if (!current_position->left) {
 						current_position->left = current;
 						current_position = current_position->left->parent;
@@ -91,7 +101,7 @@ void Tree::set_expression(unsigned char* expression, size_t length_expression)
 			else {
 				bool find_operator = false;
 #pragma unroll
-				for (size_t i = 0; i < sizeof(_list_operation) && find_operator == false; i++)
+				for (size_t i = 0; i < sizeof(_list_operation) && !find_operator; i++)
 					find_operator = *start_expression == _list_operation[i] ? true : false;
 				if (find_operator) {
 					if (stage && OPERATION) {
@@ -119,7 +129,7 @@ void Tree::set_expression(unsigned char* expression, size_t length_expression)
 	}
 }
 
-void Tree::gen_random_tree(size_t max_length)
+void Tree::gen_random_tree(size_t max_length, unsigned char* symbols, size_t number_symbols)
 {
 	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
 	ptrdiff_t  _list_stage = OPERATION;
@@ -158,8 +168,16 @@ void Tree::gen_random_tree(size_t max_length)
 		}
 		case NUMBER:
 			_list_stage = flip(0.5f) ? OPERATION : NUMBER;
-			float number = (float)rand() / RAND_MAX;
-			Node<float>* current = new Node<float>(number, NUMBER, NULL, NULL, current_position);
+			Node<float>* current;
+			if (flip(0.5f) && number_symbols) {
+				int index = rand() % number_symbols;
+				current = new Node<float>(symbols[index], SYMBOL, NULL, NULL, current_position);
+			}
+			else {
+				float number = (float)rand() / RAND_MAX;
+				current = new Node<float>(number, NUMBER, NULL, NULL, current_position);
+			}
+
 			if (!current_position->left) {
 				current_position->left = current;
 				current_position = current_position->left->parent;
@@ -231,6 +249,11 @@ unsigned char* Tree::string_current_stage(unsigned char* ptr_expression, Node<fl
 		}
 		break;
 	}
+	case SYMBOL: {
+		*ptr_expression = current_position->value;
+		ptr_expression++;
+		break;
+	}
 	}
 	return ptr_expression;
 }
@@ -283,7 +306,7 @@ unsigned char* Tree::view_tree()
 	*ptr_expression = 0;
 	return expression;
 }
-float Tree::calculate_tree()
+float Tree::calculate_tree(float* value_arguments, unsigned char* arguments, size_t number_arguments)
 {
 	Node<float>* current_position = root;
 	Node<float>* previos_position = NULL;
@@ -292,6 +315,7 @@ float Tree::calculate_tree()
 	Node<float>** ptr_start_positions = start_positions;
 	Node<float>** ptr_end_start_positions = start_positions + number_positions;
 	size_t index = 0;
+	size_t number_symbol = (NUMBER | SYMBOL);
 	while (current_position) {
 		if (ptr_start_positions == ptr_end_start_positions) {
 			number_positions += 128;
@@ -308,7 +332,7 @@ float Tree::calculate_tree()
 				if (current_position->right)
 					current_position = current_position->right;
 				else {
-					if (current_position->parent->left->stage == NUMBER && current_position->parent->right->stage == NUMBER) {
+					if (current_position->parent->left->stage & number_symbol && current_position->parent->right->stage & number_symbol) {
 						*(ptr_start_positions + index) = current_position;
 						index++;
 					}
@@ -333,7 +357,26 @@ float Tree::calculate_tree()
 	float* sum = (float*)malloc(number_sum * sizeof(float));
 	ptr_start_positions = start_positions;
 	for (size_t i = 0; i < number_sum; i++) {
-		sum[i] = calculate_numbers(start_positions[i * 2]->value, start_positions[i * 2 + 1]->value, start_positions[i * 2]->parent->value);
+		Node<float>* left = start_positions[i * 2];
+		Node<float>* right = start_positions[i * 2 + 1];
+		if (left->stage == NUMBER && right->stage == NUMBER)
+			sum[i] = calculate_numbers(left->value, right->value, left->parent->value);
+		else if (left->stage == SYMBOL && right->stage == NUMBER) {
+			float value;
+			for (size_t i = 0; i < number_arguments; i++)
+				if (arguments[i] == left->value)
+					value = value_arguments[i],
+					i = number_arguments;
+			sum[i] = calculate_numbers(value, right->value, left->parent->value);
+		}
+		else if (left->stage == NUMBER && right->stage == SYMBOL) {
+			float value;
+			for (size_t i = 0; i < number_arguments; i++)
+				if (arguments[i] == right->value)
+					value = value_arguments[i],
+					i = number_arguments;
+			sum[i] = calculate_numbers(left->value, value, left->parent->value);
+		}
 		//printf("%f\n", sum[i]);
 		ptr_start_positions[i] = ptr_start_positions[i * 2]->parent;
 	}
@@ -352,6 +395,24 @@ float Tree::calculate_tree()
 			else if (right->stage == NUMBER) {
 				//printf("%f %f\n", sum[i], right->value),
 				sum[i] = calculate_numbers(sum[i], right->value, right->parent->value);
+				ptr_start_positions[i] = ptr_start_positions[i]->parent;
+			}
+			if (left->stage == SYMBOL) {
+				float value;
+				for (size_t i = 0; i < number_arguments; i++)
+					if (arguments[i] == left->value)
+						value = value_arguments[i],
+						i = number_arguments;
+				sum[i] = calculate_numbers(value, sum[i], left->parent->value);
+				ptr_start_positions[i] = ptr_start_positions[i]->parent;
+			}
+			else if (right->stage == SYMBOL) {
+				float value;
+				for (size_t i = 0; i < number_arguments; i++)
+					if (arguments[i] == right->value)
+						value = value_arguments[i],
+						i = number_arguments;
+				sum[i] = calculate_numbers(sum[i], value, right->parent->value);
 				ptr_start_positions[i] = ptr_start_positions[i]->parent;
 			}
 			else {
