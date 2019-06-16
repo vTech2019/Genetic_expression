@@ -1,18 +1,21 @@
 #include "Tree.h"
 
-bool Tree::flip(float number)
+template<class T>
+bool Tree<T>::flip(T number)
 {
-	float random = (float)rand() / RAND_MAX;
+	T random = (T)rand() / RAND_MAX;
 	if (random < number)
 		return true;
 	else
 		return false;
 }
-float Tree::parse_number(unsigned char* string) {
-	float result = 0.0f;
-	int integer_part = 0;
+template<class T>
+T Tree<T>::parse_number(unsigned char* string, unsigned char& number) {
+	T result = 0.0f;
+	ptrdiff_t integer_part = 0;
 	if (*string < '0' || *string > '9') {
-		return nanf("");
+		number = 1;
+		return 0;
 	}
 	while (*string >= '0' && *string <= '9') {
 		integer_part *= 10;
@@ -23,7 +26,7 @@ float Tree::parse_number(unsigned char* string) {
 	if (*string == '.') {
 		string++;
 		size_t number_div = 0;
-		float result_div = 0.0f;
+		T result_div = 0.0f;
 		while (*string >= '0' && *string <= '9') {
 			result_div += (*string - '0') / 10.0f;
 			result_div *= 10.0f;
@@ -34,18 +37,19 @@ float Tree::parse_number(unsigned char* string) {
 	}
 	return result;
 }
-void Tree::set_expression(unsigned char* expression, size_t length_expression, unsigned char* symbols, size_t number_symbols)
+template<class T>
+void Tree<T>::set_expression(unsigned char* expression, size_t length_expression, unsigned char* symbols, size_t number_symbols)
 {
 	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
 	unsigned char* start_expression = expression;
 	unsigned char* end_expression = expression + length_expression;
 	ptrdiff_t stage = OPEN_BRACKET;
-	Node<float>* current_position = NULL;
-	while (start_expression != end_expression) {
+	Node<T>* current_position = NULL;
+	while (start_expression != 0 && *start_expression != 0) {
 		if (*start_expression == '(') {
-			if (stage && OPEN_BRACKET) {
+			if (stage & OPEN_BRACKET) {
 				stage = NUMBER | OPEN_BRACKET;
-				Node<float>* current = new Node<float>(NAN, OPEN_BRACKET, NULL, NULL, current_position);
+				Node<T>* current = new Node<T>(0, OPEN_BRACKET, NULL, NULL, current_position);
 				if (current_position) {
 					if (!current_position->left)
 						current_position->left = current,
@@ -64,23 +68,24 @@ void Tree::set_expression(unsigned char* expression, size_t length_expression, u
 			}
 			else
 				this->~Tree(),
-				start_expression = end_expression;
+				start_expression = 0;
 		}
 		else {
-			float number = parse_number(start_expression);
+			unsigned char number_or_symbol = 0;
+			T number = parse_number(start_expression, number_or_symbol);
 			unsigned char* find_symbol = NULL;
 			for (size_t i = 0; i < number_symbols && !find_symbol; i++)
 				find_symbol = symbols[i] == *start_expression ? symbols + i : NULL;
 
-			if (!isnan(number) || find_symbol) {
-				if (stage && NUMBER) {
+			if (!number_or_symbol || find_symbol) {
+				if (stage & NUMBER) {
 					stage = OPERATION | CLOSE_BRACKET;
-					Node<float>* current;
+					Node<T>* current;
 					if (find_symbol) {
-						current = new Node<float>(*find_symbol, SYMBOL, NULL, NULL, current_position);
+						current = new Node<T>(*find_symbol, SYMBOL, NULL, NULL, current_position);
 					}
 					else {
-						current = new Node<float>(number, NUMBER, NULL, NULL, current_position);
+						current = new Node<T>(number, NUMBER, NULL, NULL, current_position);
 					}
 					if (!current_position->left) {
 						current_position->left = current;
@@ -96,15 +101,14 @@ void Tree::set_expression(unsigned char* expression, size_t length_expression, u
 				}
 				else
 					this->~Tree(),
-					start_expression = end_expression;
+					start_expression = 0;
 			}
 			else {
 				bool find_operator = false;
-#pragma unroll
 				for (size_t i = 0; i < sizeof(_list_operation) && !find_operator; i++)
 					find_operator = *start_expression == _list_operation[i] ? true : false;
 				if (find_operator) {
-					if (stage && OPERATION) {
+					if (stage & OPERATION) {
 						stage = NUMBER | OPEN_BRACKET;
 						current_position->stage = OPERATION;
 						current_position->value = *start_expression;
@@ -112,28 +116,29 @@ void Tree::set_expression(unsigned char* expression, size_t length_expression, u
 					}
 					else
 						this->~Tree(),
-						start_expression = end_expression;
+						start_expression = 0;
 				}
 				else	if (*start_expression == ')') {
-					if (stage && CLOSE_BRACKET) {
+					if (stage & CLOSE_BRACKET) {
 						stage = OPERATION | CLOSE_BRACKET;
 						current_position = current_position->parent;
 						start_expression++;
 					}
 					else
 						this->~Tree(),
-						start_expression = end_expression;
+						start_expression = 0;
 				}
 			}
 		}
 	}
 }
 
-void Tree::gen_random_tree(size_t max_length, unsigned char* symbols, size_t number_symbols)
+template<class T>
+void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t number_symbols)
 {
 	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
 	ptrdiff_t  _list_stage = OPERATION;
-	Node<float>* current_position = NULL;
+	Node<T>* current_position = NULL;
 	size_t length = 0;
 	do {
 		length++;
@@ -147,7 +152,7 @@ void Tree::gen_random_tree(size_t max_length, unsigned char* symbols, size_t num
 		case OPERATION: {
 			_list_stage = flip(0.5f) ? OPERATION : NUMBER;
 			size_t index = (rand() % (sizeof(_list_operation) / sizeof(*_list_operation)));
-			Node<float>* current = new Node<float>((float)_list_operation[index], OPERATION, NULL, NULL, current_position);
+			Node<T>* current = new Node<T>((T)_list_operation[index], OPERATION, NULL, NULL, current_position);
 			if (current_position) {
 				if (!current_position->left)
 					current_position->left = current,
@@ -168,14 +173,14 @@ void Tree::gen_random_tree(size_t max_length, unsigned char* symbols, size_t num
 		}
 		case NUMBER:
 			_list_stage = flip(0.5f) ? OPERATION : NUMBER;
-			Node<float>* current;
+			Node<T>* current;
 			if (flip(0.5f) && number_symbols) {
 				int index = rand() % number_symbols;
-				current = new Node<float>(symbols[index], SYMBOL, NULL, NULL, current_position);
+				current = new Node<T>(symbols[index], SYMBOL, NULL, NULL, current_position);
 			}
 			else {
-				float number = (float)rand() / RAND_MAX;
-				current = new Node<float>(number, NUMBER, NULL, NULL, current_position);
+				T number = (T)rand() / RAND_MAX;
+				current = new Node<T>(number, NUMBER, NULL, NULL, current_position);
 			}
 
 			if (!current_position->left) {
@@ -195,15 +200,17 @@ void Tree::gen_random_tree(size_t max_length, unsigned char* symbols, size_t num
 	//printf("%d\n", length);
 }
 
-float* Tree::bound_check_numbers(float* ptr_numbers, float* numbers, size_t length_numbers) {
+template<class T>
+T* Tree<T>::bound_check_numbers(T* ptr_numbers, T* numbers, size_t length_numbers) {
 	if (ptr_numbers == numbers + length_numbers) {
 		length_numbers += 128;
-		numbers = (float*)realloc(numbers, length_numbers * sizeof(float));
+		numbers = (T*)realloc(numbers, length_numbers * sizeof(T));
 		ptr_numbers = numbers + length_numbers - 128;
 	}
 	return ptr_numbers;
 }
-unsigned char* Tree::bound_check_expression(unsigned char* ptr_expression) {
+template<class T>
+unsigned char* Tree<T>::bound_check_expression(unsigned char* ptr_expression) {
 	if (ptr_expression == expression + length_expression) {
 		length_expression += 128;
 		expression = (unsigned char*)realloc(expression, length_expression * sizeof(unsigned char));
@@ -211,7 +218,8 @@ unsigned char* Tree::bound_check_expression(unsigned char* ptr_expression) {
 	}
 	return ptr_expression;
 }
-float Tree::calculate_numbers(float number_1, float number_2, int operation) {
+template<class T>
+T Tree<T>::calculate_numbers(T number_1, T number_2, int operation) {
 	switch (operation) {
 	case MINUS: {
 		return number_1 - number_2;
@@ -232,7 +240,8 @@ float Tree::calculate_numbers(float number_1, float number_2, int operation) {
 	}
 	return -0.0f;
 }
-unsigned char* Tree::string_current_stage(unsigned char* ptr_expression, Node<float>* current_position) {
+template<class T>
+unsigned char* Tree<T>::string_current_stage(unsigned char* ptr_expression, Node<T>* current_position) {
 	switch (current_position->stage) {
 	case OPERATION: {
 		*ptr_expression = current_position->value;
@@ -257,10 +266,11 @@ unsigned char* Tree::string_current_stage(unsigned char* ptr_expression, Node<fl
 	}
 	return ptr_expression;
 }
-unsigned char* Tree::view_tree()
+template<class T>
+unsigned char* Tree<T>::view_tree()
 {
-	Node<float>* current_position = root;
-	Node<float>* previos_position = NULL;
+	Node<T>* current_position = root;
+	Node<T>* previos_position = NULL;
 	length_expression = 128;
 	expression = (unsigned char*)malloc(length_expression * sizeof(unsigned char));
 	unsigned char* ptr_expression = expression;
@@ -306,20 +316,22 @@ unsigned char* Tree::view_tree()
 	*ptr_expression = 0;
 	return expression;
 }
-float Tree::calculate_tree(float* value_arguments, unsigned char* arguments, size_t number_arguments)
+
+template<class T>
+T Tree<T>::calculate_tree(T* value_arguments, unsigned char* arguments, size_t number_arguments)
 {
-	Node<float>* current_position = root;
-	Node<float>* previos_position = NULL;
+	Node<T>* current_position = root;
+	Node<T>* previos_position = NULL;
 	size_t number_positions = 128;
-	Node<float>** start_positions = (Node<float> * *)malloc(number_positions * sizeof(Node<float> * *));
-	Node<float>** ptr_start_positions = start_positions;
-	Node<float>** ptr_end_start_positions = start_positions + number_positions;
+	Node<T>** start_positions = (Node<T> * *)malloc(number_positions * sizeof(Node<T> * *));
+	Node<T>** ptr_start_positions = start_positions;
+	Node<T>** ptr_end_start_positions = start_positions + number_positions;
 	size_t index = 0;
 	size_t number_symbol = (NUMBER | SYMBOL);
 	while (current_position) {
 		if (ptr_start_positions == ptr_end_start_positions) {
 			number_positions += 128;
-			start_positions = (Node<float> * *)realloc(start_positions, number_positions * sizeof(Node<float> * *));
+			start_positions = (Node<T> * *)realloc(start_positions, number_positions * sizeof(Node<T> * *));
 			ptr_start_positions = start_positions + number_positions - 128;
 			ptr_end_start_positions = start_positions + number_positions;
 		}
@@ -354,15 +366,15 @@ float Tree::calculate_tree(float* value_arguments, unsigned char* arguments, siz
 		}
 	}
 	size_t number_sum = (index >> 1);
-	float* sum = (float*)malloc(number_sum * sizeof(float));
+	T* sum = (T*)malloc(number_sum * sizeof(T));
 	ptr_start_positions = start_positions;
 	for (size_t i = 0; i < number_sum; i++) {
-		Node<float>* left = start_positions[i * 2];
-		Node<float>* right = start_positions[i * 2 + 1];
+		Node<T>* left = start_positions[i * 2];
+		Node<T>* right = start_positions[i * 2 + 1];
 		if (left->stage == NUMBER && right->stage == NUMBER)
 			sum[i] = calculate_numbers(left->value, right->value, left->parent->value);
 		else if (left->stage == SYMBOL && right->stage == NUMBER) {
-			float value;
+			T value;
 			for (size_t i = 0; i < number_arguments; i++)
 				if (arguments[i] == left->value)
 					value = value_arguments[i],
@@ -370,7 +382,7 @@ float Tree::calculate_tree(float* value_arguments, unsigned char* arguments, siz
 			sum[i] = calculate_numbers(value, right->value, left->parent->value);
 		}
 		else if (left->stage == NUMBER && right->stage == SYMBOL) {
-			float value;
+			T value;
 			for (size_t i = 0; i < number_arguments; i++)
 				if (arguments[i] == right->value)
 					value = value_arguments[i],
@@ -380,13 +392,13 @@ float Tree::calculate_tree(float* value_arguments, unsigned char* arguments, siz
 		//printf("%f\n", sum[i]);
 		ptr_start_positions[i] = ptr_start_positions[i * 2]->parent;
 	}
-	Node<float>** stage = ptr_start_positions + number_sum;
+	Node<T>** stage = ptr_start_positions + number_sum;
 
-	float result;
+	T result = 0;
 	for (size_t i = 0; i < number_sum; i++) {
 		while (stage[i] != NULL && ptr_start_positions[i]->parent) {
-			Node<float>* left = ptr_start_positions[i]->parent->left;
-			Node<float>* right = ptr_start_positions[i]->parent->right;
+			Node<T>* left = ptr_start_positions[i]->parent->left;
+			Node<T>* right = ptr_start_positions[i]->parent->right;
 			if (left->stage == NUMBER) {
 				//printf("%f %f\n", left->value, sum[i]),
 				sum[i] = calculate_numbers(left->value, sum[i], left->parent->value);
@@ -398,7 +410,7 @@ float Tree::calculate_tree(float* value_arguments, unsigned char* arguments, siz
 				ptr_start_positions[i] = ptr_start_positions[i]->parent;
 			}
 			if (left->stage == SYMBOL) {
-				float value;
+				T value;
 				for (size_t i = 0; i < number_arguments; i++)
 					if (arguments[i] == left->value)
 						value = value_arguments[i],
@@ -407,7 +419,7 @@ float Tree::calculate_tree(float* value_arguments, unsigned char* arguments, siz
 				ptr_start_positions[i] = ptr_start_positions[i]->parent;
 			}
 			else if (right->stage == SYMBOL) {
-				float value;
+				T value;
 				for (size_t i = 0; i < number_arguments; i++)
 					if (arguments[i] == right->value)
 						value = value_arguments[i],
@@ -439,18 +451,78 @@ float Tree::calculate_tree(float* value_arguments, unsigned char* arguments, siz
 	free(start_positions);
 	return result;
 }
-Tree::Tree()
+template<class T>
+void Tree<T>::operator=(Tree<T>& tree)
+{
+	size_t N = 1;
+	Node<T>** memory = NULL;
+	Node<T>** memory_copy = NULL;
+	Node<T>** memory_next = NULL;
+	Node<T>** memory_copy_next = NULL;
+	if (tree.root) {
+		memory = (Node<T> * *) realloc(memory, N * sizeof(Node<T> * *));
+		memory_copy = (Node<T> * *) realloc(memory_copy, N * sizeof(Node<T> * *));
+		memory_next = (Node<T> * *) realloc(memory_next, 2 * N * sizeof(Node<T> * *));
+		memory_copy_next = (Node<T> * *) realloc(memory_copy_next, 2 * N * sizeof(Node<T> * *));
+		memory[0] = tree.root;
+		memory_copy[0] = new Node<T>(memory[0]->value, memory[0]->stage, NULL, NULL, NULL);
+		root = memory_copy[0];
+		{
+			size_t number = 1;
+			while (number != 0) {
+				number = 0;
+				for (size_t i = 0; i < N; i++) {
+					Node<T>* tmp_memory_copy = memory_copy[i];
+					Node<T>* tmp_memory = memory[i];
+					if (tmp_memory) {
+						memory_next[number] = tmp_memory->left ? tmp_memory->left : NULL;
+						if (memory_next[number]) {
+							memory_copy_next[number] = new Node<T>(memory_next[number]->value, memory_next[number]->stage, NULL, NULL, tmp_memory_copy);
+							tmp_memory_copy->left = memory_copy_next[number];
+							number++;
+						}
+						memory_next[number] = tmp_memory->right ? tmp_memory->right : NULL;
+						if (memory_next[number]) {
+							memory_copy_next[number] = new Node<T>(memory_next[number]->value, memory_next[number]->stage, NULL, NULL, tmp_memory_copy);
+							tmp_memory_copy->right = memory_copy_next[number];
+							number++;
+						}
+					}
+				}
+				N = number * 2;
+				memory = (Node<T> * *) realloc(memory, N * sizeof(Node<T> * *));
+				memory_copy = (Node<T> * *) realloc(memory_copy, N * sizeof(Node<T> * *));
+				memory_next = (Node<T> * *) realloc(memory_next, 2 * N * sizeof(Node<T> * *));
+				memory_copy_next = (Node<T> * *) realloc(memory_copy_next, 2 * N * sizeof(Node<T> * *));
+				for (size_t i = 0; i < number; i++) {
+					memory[i] = memory_next[i];
+					memory_copy[i] = memory_copy_next[i];
+				}
+				for (size_t i = number; i < N; i++)
+					memory[i] = 0,
+					memory_copy[i] = 0;
+			}
+		}
+		free(memory);
+		free(memory_copy);
+		free(memory_next);
+		free(memory_copy_next);
+	}
+}
+template<class T>
+Tree<T>::Tree()
 {
 	for (size_t i = 0; i < sizeof(*this); i++)
 		((char*)this)[i] = 0;
 }
 
-Tree::~Tree()
+template<class T>
+Tree<T>::~Tree()
 {
 	if (expression)
 		free(expression);
 	expression = NULL;
-	Node<float>* current_position = root;
+	Node<T>* current_position = root;
 	while (current_position) {
 		while (current_position->left) {
 			current_position = current_position->left;
@@ -459,7 +531,7 @@ Tree::~Tree()
 			current_position = current_position->right;
 		}
 		if (!current_position->left && !current_position->right) {
-			Node<float>* delete_position = current_position;
+			Node<T>* delete_position = current_position;
 			if (current_position->parent) {
 				current_position->parent->left = current_position == current_position->parent->left ? NULL : current_position->parent->left;
 				current_position->parent->right = current_position == current_position->parent->right ? NULL : current_position->parent->right;
@@ -470,4 +542,26 @@ Tree::~Tree()
 			delete delete_position;
 		}
 	}
+	root = 0;
+}
+
+void TreeFunction()
+{
+	Tree<float> tree_float;
+	Tree<int> tree_int;
+	Tree<double> tree_double;
+	tree_float.operator=(tree_float);
+	tree_float.calculate_tree(NULL, NULL, NULL);
+	tree_float.gen_random_tree(NULL, NULL, NULL);
+	//	tree_float.set_expression(NULL, NULL, NULL, NULL);
+	tree_float.view_tree();
+	tree_int.calculate_tree(NULL, NULL, NULL);
+	tree_int.gen_random_tree(NULL, NULL, NULL);
+	//	tree_int.set_expression(NULL, NULL, NULL, NULL);
+	tree_int.view_tree();
+	tree_double.calculate_tree(NULL, NULL, NULL);
+	tree_double.gen_random_tree(NULL, NULL, NULL);
+	tree_double.set_expression(NULL, NULL, NULL, NULL);
+	tree_double.view_tree();
+	tree_double.operator=(tree_double);
 }
