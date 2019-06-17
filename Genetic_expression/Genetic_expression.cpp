@@ -26,7 +26,7 @@ int main()
 	double step_argument[] = { 4, 0 };
 	genetic_function.set_arguments(number, (unsigned char*)"xy", 2, 1000, 'y', step_argument);
 	for (size_t i = 0; i < 1000; i++)
-		tree[i].gen_random_tree(64, NULL, 0),
+		tree[i].gen_random_tree(64, (unsigned char*)"xy", 2),
 		genetic_function.push_tree(&tree[i]);
 	genetic_function.start_tree_genetic();
 	delete[] tree;

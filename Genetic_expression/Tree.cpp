@@ -9,6 +9,13 @@ bool Tree<T>::flip(T number)
 	else
 		return false;
 }
+size_t get_random()
+{
+	return rand();
+}
+double get_random(double min, double max) {
+	return (max - min) * ((double)rand() / (double)RAND_MAX);
+}
 template<class T>
 T Tree<T>::parse_number(unsigned char* string, unsigned char& number) {
 	T result = 0.0f;
@@ -37,9 +44,15 @@ T Tree<T>::parse_number(unsigned char* string, unsigned char& number) {
 	}
 	return result;
 }
+template<typename T>
+size_t Tree<T>::get_number_component_tree()
+{
+	return number_component_tree;
+}
 template<class T>
 void Tree<T>::set_expression(unsigned char* expression, size_t length_expression, unsigned char* symbols, size_t number_symbols)
 {
+	number_component_tree = 0;
 	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
 	unsigned char* start_expression = expression;
 	unsigned char* end_expression = expression + length_expression;
@@ -52,15 +65,21 @@ void Tree<T>::set_expression(unsigned char* expression, size_t length_expression
 				Node<T>* current = new Node<T>(0, OPEN_BRACKET, NULL, NULL, current_position);
 				if (current_position) {
 					if (!current_position->left)
+						number_component_tree++,
 						current_position->left = current,
 						current_position->left->parent = current_position,
 						current_position = current_position->left;
 					else if (!current_position->right)
+						number_component_tree++,
 						current_position->right = current,
 						current_position->right->parent = current_position,
 						current_position = current_position->right;
+					else {
+						delete current;
+					}
 				}
 				else
+					number_component_tree++,
 					current_position = current,
 					root = current_position;
 
@@ -88,14 +107,17 @@ void Tree<T>::set_expression(unsigned char* expression, size_t length_expression
 						current = new Node<T>(number, NUMBER, NULL, NULL, current_position);
 					}
 					if (!current_position->left) {
-						current_position->left = current;
+						number_component_tree++,
+							current_position->left = current;
 						current_position = current_position->left->parent;
 					}
 					else if (!current_position->right) {
-						current_position->right = current;
+						number_component_tree++,
+							current_position->right = current;
 						current_position = current_position->right->parent;
 					}
 					else if (current_position->parent)
+						delete current,
 						current_position = current_position->parent;
 					start_expression++;
 				}
@@ -136,6 +158,7 @@ void Tree<T>::set_expression(unsigned char* expression, size_t length_expression
 template<class T>
 void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t number_symbols)
 {
+	number_component_tree = 0;
 	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
 	ptrdiff_t  _list_stage = OPERATION;
 	Node<T>* current_position = NULL;
@@ -155,18 +178,23 @@ void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t 
 			Node<T>* current = new Node<T>((T)_list_operation[index], OPERATION, NULL, NULL, current_position);
 			if (current_position) {
 				if (!current_position->left)
+					number_component_tree++,
 					current_position->left = current,
 					current_position->left->parent = current_position,
 					current_position = current_position->left;
 				else if (!current_position->right)
+					number_component_tree++,
 					current_position->right = current,
 					current_position->right->parent = current_position,
 					current_position = current_position->right;
-				else if (current_position->parent)
+				else if (current_position->parent) {
+					delete current;
 					current_position = current_position->parent;
+				}
 			}
 			else {
-				current_position = current;
+				number_component_tree++,
+					current_position = current;
 				root = current_position;
 			}
 			break;
@@ -182,17 +210,23 @@ void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t 
 				T number = (T)rand() / RAND_MAX;
 				current = new Node<T>(number, NUMBER, NULL, NULL, current_position);
 			}
-
 			if (!current_position->left) {
+				number_component_tree++;
 				current_position->left = current;
 				current_position = current_position->left->parent;
 			}
 			else if (!current_position->right) {
+				number_component_tree++;
 				current_position->right = current;
 				current_position = current_position->right->parent;
 			}
-			else if (current_position->parent)
+			else if (current_position->parent) {
+				delete current;
 				current_position = current_position->parent;
+			}
+			else {
+				delete current;
+			}
 
 			break;
 		}
@@ -230,11 +264,17 @@ T Tree<T>::calculate_numbers(T number_1, T number_2, int operation) {
 		break;
 	}
 	case MULTIPLY: {
+		if (isnan((double)number_1 * number_2))
+			return 0;
+		else
 		return number_1 * number_2;
 		break;
 	}
 	case DIVIDE: {
-		return number_1 / number_2;
+		if (isnan((double)number_1 / number_2))
+			return 0;
+		else
+			return number_1 / number_2;
 		break;
 	}
 	}
@@ -454,12 +494,15 @@ T Tree<T>::calculate_tree(T* value_arguments, unsigned char* arguments, size_t n
 template<class T>
 void Tree<T>::operator=(Tree<T>& tree)
 {
+	this->~Tree();
+	number_component_tree = 0;
 	size_t N = 1;
 	Node<T>** memory = NULL;
 	Node<T>** memory_copy = NULL;
 	Node<T>** memory_next = NULL;
 	Node<T>** memory_copy_next = NULL;
 	if (tree.root) {
+		number_component_tree++;
 		memory = (Node<T> * *) realloc(memory, N * sizeof(Node<T> * *));
 		memory_copy = (Node<T> * *) realloc(memory_copy, N * sizeof(Node<T> * *));
 		memory_next = (Node<T> * *) realloc(memory_next, 2 * N * sizeof(Node<T> * *));
@@ -477,12 +520,14 @@ void Tree<T>::operator=(Tree<T>& tree)
 					if (tmp_memory) {
 						memory_next[number] = tmp_memory->left ? tmp_memory->left : NULL;
 						if (memory_next[number]) {
+							number_component_tree++;
 							memory_copy_next[number] = new Node<T>(memory_next[number]->value, memory_next[number]->stage, NULL, NULL, tmp_memory_copy);
 							tmp_memory_copy->left = memory_copy_next[number];
 							number++;
 						}
 						memory_next[number] = tmp_memory->right ? tmp_memory->right : NULL;
 						if (memory_next[number]) {
+							number_component_tree++;
 							memory_copy_next[number] = new Node<T>(memory_next[number]->value, memory_next[number]->stage, NULL, NULL, tmp_memory_copy);
 							tmp_memory_copy->right = memory_copy_next[number];
 							number++;
@@ -510,6 +555,44 @@ void Tree<T>::operator=(Tree<T>& tree)
 	}
 }
 template<class T>
+Node<T>* Tree<T>::operator[](size_t index) {
+	Node<T>* current_position = root;
+	Node<T>* previos_position = NULL;
+
+	while (current_position || index != 0) {
+		if (previos_position == current_position->parent) {
+			previos_position = current_position;
+			if (current_position->left) {
+				current_position = current_position->left;
+			}
+			else {
+				if (!index)
+					return current_position;
+				index--;
+				if (current_position->right)
+					current_position = current_position->right;
+				else
+					current_position = current_position->parent;
+			}
+		}
+		else if (previos_position == current_position->left) {
+			previos_position = current_position;
+			if (!index)
+				return current_position;
+			index--;
+			if (current_position->right)
+				current_position = current_position->right;
+			else
+				current_position = current_position->parent;
+		}
+		else if (previos_position == current_position->right) {
+			previos_position = current_position;
+			current_position = current_position->parent;
+		}
+	}
+	return current_position;
+}
+template<class T>
 Tree<T>::Tree()
 {
 	for (size_t i = 0; i < sizeof(*this); i++)
@@ -519,6 +602,7 @@ Tree<T>::Tree()
 template<class T>
 Tree<T>::~Tree()
 {
+	number_component_tree = 0;
 	if (expression)
 		free(expression);
 	expression = NULL;
@@ -564,4 +648,6 @@ void TreeFunction()
 	tree_double.set_expression(NULL, NULL, NULL, NULL);
 	tree_double.view_tree();
 	tree_double.operator=(tree_double);
+	tree_double.operator[](0);
+	tree_double.get_number_component_tree();
 }

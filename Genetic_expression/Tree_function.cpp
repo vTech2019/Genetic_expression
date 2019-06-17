@@ -78,6 +78,8 @@ void Tree_genetic<T>::fitness()
 				for (size_t j = 0; j < number_symbols; j++)
 					tmp_arguments_function[j] += steps_arguments[j];
 			}
+			if (isnan((double)tmp_arguments_function[result_symbol]))
+			printf("%s\n", all_tree[i]->view_tree());
 			survival_rate[i] = (double)value - tmp_arguments_function[result_symbol];
 			for (size_t i = 0; i < number_symbols; i++)
 				tmp_arguments_function[i] = arguments_function[i];
@@ -100,11 +102,31 @@ void Tree_genetic<T>::set_main(Tree<T>* main_tree)
 template<class T>
 void Tree_genetic<T>::crossing()
 {
+	for (size_t i = number_tree; i < 2 * number_tree; i += 2) {
+		size_t index_1 = get_random() % all_tree[i]->get_number_component_tree();
+		size_t index_2 = get_random() % all_tree[i + 1]->get_number_component_tree();
+		Node<T>* node_1 = (*all_tree[i])[index_1];
+		Node<T>* tmp_node = node_1;
+		Node<T>* node_2 = (*all_tree[i + 1])[index_2];
+		node_1 = node_2;
+		node_2 = tmp_node;
+	}
 }
 
 template<class T>
 void Tree_genetic<T>::mutation()
 {
+	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
+	for (size_t i = number_tree; i < 2 * number_tree; i++) {
+		size_t index_1 = get_random() % all_tree[i]->get_number_component_tree();
+		Node<T>* node = (*all_tree[i])[index_1];
+		if (node->stage == OPERATION) {
+			node->value = _list_operation[(get_random() % 4)];
+		}
+		else if (node->stage == NUMBER) {
+			node->value = (T)get_random(-999999.999999, 999999.999999);
+		}
+	}
 }
 
 template<class T>
@@ -115,16 +137,20 @@ T* Tree_genetic<T>::start_tree_genetic()
 		survival_rate = (double*)realloc(survival_rate, (number_tree * 2) * sizeof(double));
 		all_tree = (Tree<T> * *)realloc(all_tree, (number_tree * 2) * sizeof(Tree<T> * *));
 		procreation = new Tree<T>[number_tree];
-		for (size_t i = 0; i < number_tree; i++) {
-			procreation[i] = *all_tree[i];
+		size_t y = 0;
+		while (y != 1000) {
+			for (size_t i = 0; i < number_tree; i++) {
+				procreation[i] = *all_tree[i];
+			}
+			for (size_t i = 0; i < number_tree; i++) {
+				all_tree[i + number_tree] = &procreation[i];
+			}
+			//crossing();
+			mutation();
+			fitness();
+			sort_tree();
+			y++;
 		}
-		for (size_t i = 0; i < number_tree; i++) {
-			all_tree[i + number_tree] = &procreation[i];
-			printf("%f\n", all_tree[i + number_tree]->calculate_tree(tmp_arguments_function, symbols_function, number_symbols));
-		}
-
-		fitness();
-		sort_tree();
 	}
 	return nullptr;
 }
