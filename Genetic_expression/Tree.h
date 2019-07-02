@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <malloc.h>
+#include <random>
 enum list_stage { OPEN_BRACKET = 1, OPERATION = 2, NUMBER = 4, CLOSE_BRACKET = 8, SYMBOL = 16 };
 enum symbols { a = 97, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z = 122 };
 enum list_operation { MINUS = 45, PLUS = 43, MULTIPLY = 42, DIVIDE = 47 };
@@ -44,6 +45,8 @@ class Tree
 	unsigned char* bound_check_expression(unsigned char* ptr_expression);
 	T calculate_numbers(T number_1, T number_2, int operation);
 	unsigned char* string_current_stage(unsigned char* ptr_expression, Node<T>* current_position);
+	Node<T>* find_node(size_t index);
+	void calculate_number_node();
 public:
 	size_t get_number_component_tree();
 	void set_expression(unsigned char* expression, size_t length_expression, unsigned char* symbols, size_t number_symbols);
@@ -51,7 +54,10 @@ public:
 	unsigned char* view_tree();
 	T calculate_tree(T* value_arguments, unsigned char* arguments, size_t number_arguments);
 	void operator=(Tree<T>& tree);
+	void operator=(size_t i);
+	template<typename T> T operator[](size_t index);
 	Node<T>* operator[](size_t index);
+	Node<T>* get_ptr(size_t index);
 	//float calculate_tree();
 	Tree();
 	~Tree();

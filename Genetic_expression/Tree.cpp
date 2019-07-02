@@ -9,12 +9,14 @@ bool Tree<T>::flip(T number)
 	else
 		return false;
 }
-size_t get_random()
-{
-	return rand();
+size_t get_random(){
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	static std::uniform_int_distribution<unsigned long long> dis(0, INT64_MAX);
+	return dis(gen);
 }
 double get_random(double min, double max) {
-	return (max - min) * ((double)rand() / (double)RAND_MAX);
+	return (max - min) * ((double)get_random() / (double)RAND_MAX);
 }
 template<class T>
 T Tree<T>::parse_number(unsigned char* string, unsigned char& number) {
@@ -47,6 +49,9 @@ T Tree<T>::parse_number(unsigned char* string, unsigned char& number) {
 template<typename T>
 size_t Tree<T>::get_number_component_tree()
 {
+	if (number_component_tree == 0) {
+		calculate_number_node();
+	}
 	return number_component_tree;
 }
 template<class T>
@@ -158,80 +163,99 @@ void Tree<T>::set_expression(unsigned char* expression, size_t length_expression
 template<class T>
 void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t number_symbols)
 {
-	number_component_tree = 0;
 	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
+	number_component_tree = 0;
 	ptrdiff_t  _list_stage = OPERATION;
 	Node<T>* current_position = NULL;
 	size_t length = 0;
+	size_t* index_symbols = (size_t*)_malloca(number_symbols * sizeof * index_symbols);
+	size_t number_index_symbols = 0;
 	do {
-		length++;
-		if (max_length < length) {
-			this->~Tree();
-			current_position = NULL;
-			_list_stage = OPERATION;
-			length ^= length;
-		}
-		switch (_list_stage) {
-		case OPERATION: {
-			_list_stage = flip(0.5f) ? OPERATION : NUMBER;
-			size_t index = (rand() % (sizeof(_list_operation) / sizeof(*_list_operation)));
-			Node<T>* current = new Node<T>((T)_list_operation[index], OPERATION, NULL, NULL, current_position);
-			if (current_position) {
-				if (!current_position->left)
-					number_component_tree++,
-					current_position->left = current,
-					current_position->left->parent = current_position,
-					current_position = current_position->left;
-				else if (!current_position->right)
-					number_component_tree++,
-					current_position->right = current,
-					current_position->right->parent = current_position,
-					current_position = current_position->right;
+		do {
+			length++;
+			if (max_length < length) {
+				this->~Tree();
+				*this = 0;
+				_list_stage = OPERATION;
+				current_position = NULL;
+				length = 0;
+				number_index_symbols = 0;
+			}
+			switch (_list_stage) {
+			case OPERATION: {
+				_list_stage = flip(0.5f) ? OPERATION : NUMBER;
+				size_t index = (get_random() % (sizeof(_list_operation) / sizeof(*_list_operation)));
+				if (current_position) {
+					if (!current_position->left)
+						number_component_tree++,
+						current_position->left = new Node<T>((T)_list_operation[index], OPERATION, NULL, NULL, current_position),
+						current_position->left->parent = current_position,
+						current_position = current_position->left;
+					else if (!current_position->right)
+						number_component_tree++,
+						current_position->right = new Node<T>((T)_list_operation[index], OPERATION, NULL, NULL, current_position),
+						current_position->right->parent = current_position,
+						current_position = current_position->right;
+					else if (current_position->parent) {
+						current_position = current_position->parent;
+					}
+				}
+				else {
+					number_component_tree++;
+					current_position = new Node<T>((T)_list_operation[index], OPERATION, NULL, NULL, current_position);
+					root = current_position;
+				}
+				break;
+			}
+			case NUMBER:
+				_list_stage = flip(0.5f) ? OPERATION : NUMBER;
+				Node<T>* current = (Node<T>*)(!current_position->left | !current_position->right);
+				if (current) {
+					if (flip(0.5f) && number_symbols) {
+						size_t index = get_random() % number_symbols;
+						current = new Node<T>(symbols[index], SYMBOL, NULL, NULL, current_position);
+						bool find_symbol = false;
+						for (size_t i = 0; i < number_index_symbols; i++) {
+							if (index_symbols[i] == index)
+								find_symbol = true,
+								i = number_index_symbols;
+						}
+						if (!find_symbol)
+							index_symbols[number_index_symbols] = index,
+							number_index_symbols++;
+					}
+					else {
+						T number = (T)get_random() / RAND_MAX;
+						current = new Node<T>(number, NUMBER, NULL, NULL, current_position);
+					}
+				}
+				if (!current_position->left) {
+					number_component_tree++;
+					current_position->left = current;
+					current_position = current_position->left->parent;
+				}
+				else if (!current_position->right) {
+					number_component_tree++;
+					current_position->right = current;
+					current_position = current_position->right->parent;
+				}
 				else if (current_position->parent) {
-					delete current;
 					current_position = current_position->parent;
 				}
-			}
-			else {
-				number_component_tree++,
-					current_position = current;
-				root = current_position;
-			}
-			break;
-		}
-		case NUMBER:
-			_list_stage = flip(0.5f) ? OPERATION : NUMBER;
-			Node<T>* current;
-			if (flip(0.5f) && number_symbols) {
-				int index = rand() % number_symbols;
-				current = new Node<T>(symbols[index], SYMBOL, NULL, NULL, current_position);
-			}
-			else {
-				T number = (T)rand() / RAND_MAX;
-				current = new Node<T>(number, NUMBER, NULL, NULL, current_position);
-			}
-			if (!current_position->left) {
-				number_component_tree++;
-				current_position->left = current;
-				current_position = current_position->left->parent;
-			}
-			else if (!current_position->right) {
-				number_component_tree++;
-				current_position->right = current;
-				current_position = current_position->right->parent;
-			}
-			else if (current_position->parent) {
-				delete current;
-				current_position = current_position->parent;
-			}
-			else {
-				delete current;
-			}
 
-			break;
+				break;
+			}
+		} while (!current_position->left || !current_position->right || current_position->parent);
+		if (number_index_symbols != number_symbols) {
+			this->~Tree();
+			*this = 0;
+			_list_stage = OPERATION;
+			current_position = NULL;
+			length = 0;
+			number_index_symbols = 0;
 		}
-	} while (!current_position->left || !current_position->right || current_position->parent);
-	//printf("%d\n", length);
+	} while (number_index_symbols != number_symbols);
+	_freea(index_symbols);
 }
 
 template<class T>
@@ -264,21 +288,19 @@ T Tree<T>::calculate_numbers(T number_1, T number_2, int operation) {
 		break;
 	}
 	case MULTIPLY: {
-		if (isnan((double)number_1 * number_2))
-			return 0;
-		else
+		//number_2 = number_2 == 0 ? 0.1e-32 : number_2;
+		//number_1 = number_1 == 0 ? 0.1e-32 : number_1;
 		return number_1 * number_2;
 		break;
 	}
 	case DIVIDE: {
-		if (isnan((double)number_1 / number_2))
-			return 0;
-		else
-			return number_1 / number_2;
+		//number_2 = number_2 == 0 ? 0.1e-32 : number_2;
+		//number_1 = number_1 == 0 ? 0.1e-32 : number_1;
+		return number_1 / number_2;
 		break;
 	}
 	}
-	return -0.0f;
+	return -0.0;
 }
 template<class T>
 unsigned char* Tree<T>::string_current_stage(unsigned char* ptr_expression, Node<T>* current_position) {
@@ -510,43 +532,41 @@ void Tree<T>::operator=(Tree<T>& tree)
 		memory[0] = tree.root;
 		memory_copy[0] = new Node<T>(memory[0]->value, memory[0]->stage, NULL, NULL, NULL);
 		root = memory_copy[0];
-		{
-			size_t number = 1;
-			while (number != 0) {
-				number = 0;
-				for (size_t i = 0; i < N; i++) {
-					Node<T>* tmp_memory_copy = memory_copy[i];
-					Node<T>* tmp_memory = memory[i];
-					if (tmp_memory) {
-						memory_next[number] = tmp_memory->left ? tmp_memory->left : NULL;
-						if (memory_next[number]) {
-							number_component_tree++;
-							memory_copy_next[number] = new Node<T>(memory_next[number]->value, memory_next[number]->stage, NULL, NULL, tmp_memory_copy);
-							tmp_memory_copy->left = memory_copy_next[number];
-							number++;
-						}
-						memory_next[number] = tmp_memory->right ? tmp_memory->right : NULL;
-						if (memory_next[number]) {
-							number_component_tree++;
-							memory_copy_next[number] = new Node<T>(memory_next[number]->value, memory_next[number]->stage, NULL, NULL, tmp_memory_copy);
-							tmp_memory_copy->right = memory_copy_next[number];
-							number++;
-						}
+		size_t number = 1;
+		while (number != 0) {
+			number = 0;
+			for (size_t i = 0; i < N; i++) {
+				Node<T>* tmp_memory_copy = memory_copy[i];
+				Node<T>* tmp_memory = memory[i];
+				if (tmp_memory) {
+					memory_next[number] = tmp_memory->left ? tmp_memory->left : NULL;
+					if (memory_next[number]) {
+						number_component_tree++;
+						memory_copy_next[number] = new Node<T>(memory_next[number]->value, memory_next[number]->stage, NULL, NULL, tmp_memory_copy);
+						tmp_memory_copy->left = memory_copy_next[number];
+						number++;
+					}
+					memory_next[number] = tmp_memory->right ? tmp_memory->right : NULL;
+					if (memory_next[number]) {
+						number_component_tree++;
+						memory_copy_next[number] = new Node<T>(memory_next[number]->value, memory_next[number]->stage, NULL, NULL, tmp_memory_copy);
+						tmp_memory_copy->right = memory_copy_next[number];
+						number++;
 					}
 				}
-				N = number * 2;
-				memory = (Node<T> * *) realloc(memory, N * sizeof(Node<T> * *));
-				memory_copy = (Node<T> * *) realloc(memory_copy, N * sizeof(Node<T> * *));
-				memory_next = (Node<T> * *) realloc(memory_next, 2 * N * sizeof(Node<T> * *));
-				memory_copy_next = (Node<T> * *) realloc(memory_copy_next, 2 * N * sizeof(Node<T> * *));
-				for (size_t i = 0; i < number; i++) {
-					memory[i] = memory_next[i];
-					memory_copy[i] = memory_copy_next[i];
-				}
-				for (size_t i = number; i < N; i++)
-					memory[i] = 0,
-					memory_copy[i] = 0;
 			}
+			N = number * 2;
+			memory = (Node<T> * *) realloc(memory, N * sizeof(Node<T> * *));
+			memory_copy = (Node<T> * *) realloc(memory_copy, N * sizeof(Node<T> * *));
+			memory_next = (Node<T> * *) realloc(memory_next, 2 * N * sizeof(Node<T> * *));
+			memory_copy_next = (Node<T> * *) realloc(memory_copy_next, 2 * N * sizeof(Node<T> * *));
+			for (size_t i = 0; i < number; i++) {
+				memory[i] = memory_next[i];
+				memory_copy[i] = memory_copy_next[i];
+			}
+			for (size_t i = number; i < N; i++)
+				memory[i] = 0,
+				memory_copy[i] = 0;
 		}
 		free(memory);
 		free(memory_copy);
@@ -554,10 +574,51 @@ void Tree<T>::operator=(Tree<T>& tree)
 		free(memory_copy_next);
 	}
 }
+template<typename T>
+void Tree<T>::operator=(size_t i)
+{
+	for (size_t j = 0; j < sizeof(*this); j++)
+		((char*)this)[j] = i;
+}
 template<class T>
-Node<T>* Tree<T>::operator[](size_t index) {
+void Tree<T>::calculate_number_node() {
 	Node<T>* current_position = root;
 	Node<T>* previos_position = NULL;
+	number_component_tree = 0;
+
+	while (current_position) {
+		if (previos_position == current_position->parent) {
+			previos_position = current_position;
+			if (current_position->left) {
+				current_position = current_position->left;
+			}
+			else {
+				number_component_tree++;
+				if (current_position->right)
+					current_position = current_position->right;
+				else
+					current_position = current_position->parent;
+			}
+		}
+		else if (previos_position == current_position->left) {
+			previos_position = current_position;
+			number_component_tree++;
+			if (current_position->right)
+				current_position = current_position->right;
+			else
+				current_position = current_position->parent;
+		}
+		else if (previos_position == current_position->right) {
+			previos_position = current_position;
+			current_position = current_position->parent;
+		}
+	}
+}
+template<class T>
+Node<T>* Tree<T>::find_node(size_t index) {
+	Node<T>* current_position = root;
+	Node<T>* previos_position = NULL;
+	number_component_tree = 0;
 
 	while (current_position || index != 0) {
 		if (previos_position == current_position->parent) {
@@ -567,7 +628,7 @@ Node<T>* Tree<T>::operator[](size_t index) {
 			}
 			else {
 				if (!index)
-					return current_position;
+					return &(*current_position);
 				index--;
 				if (current_position->right)
 					current_position = current_position->right;
@@ -578,7 +639,7 @@ Node<T>* Tree<T>::operator[](size_t index) {
 		else if (previos_position == current_position->left) {
 			previos_position = current_position;
 			if (!index)
-				return current_position;
+				return &(*current_position);
 			index--;
 			if (current_position->right)
 				current_position = current_position->right;
@@ -590,7 +651,16 @@ Node<T>* Tree<T>::operator[](size_t index) {
 			current_position = current_position->parent;
 		}
 	}
-	return current_position;
+	return &(*current_position);
+}
+template<typename T>
+Node<T>* Tree<T>::operator[](size_t index)
+{
+	return find_node(index);
+}
+template<class T>
+Node<T>* Tree<T>::get_ptr(size_t index) {
+	return find_node(index);;
 }
 template<class T>
 Tree<T>::Tree()
@@ -649,5 +719,6 @@ void TreeFunction()
 	tree_double.view_tree();
 	tree_double.operator=(tree_double);
 	tree_double.operator[](0);
+	tree_double.get_ptr(0);
 	tree_double.get_number_component_tree();
 }
