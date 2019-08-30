@@ -1,15 +1,11 @@
 #pragma once
 #define _PSOC_ 
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <malloc.h>
-#include <random>
 enum list_stage { OPEN_BRACKET = 1, OPERATION = 2, NUMBER = 4, CLOSE_BRACKET = 8, SYMBOL = 16 };
 enum symbols { a = 97, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z = 122 };
 enum list_operation { MINUS = 45, PLUS = 43, MULTIPLY = 42, DIVIDE = 47 };
 size_t get_random();
 double get_random(double min, double max);
+float get_random(float min, float max);
 template <class T>
 struct Node {
 	T value;
@@ -40,7 +36,7 @@ class Tree
 	size_t length_expression;
 	size_t number_component_tree;
 	bool flip(T number);
-	T parse_number(unsigned char* string, unsigned char& number);
+	T parse_number(unsigned char*& string, unsigned char& number);
 	T* bound_check_numbers(T* ptr_numbers, T* numbers, size_t length_numbers);
 	unsigned char* bound_check_expression(unsigned char* ptr_expression);
 	T calculate_numbers(T number_1, T number_2, int operation);
@@ -53,7 +49,7 @@ public:
 	void gen_random_tree(size_t max_length, unsigned char* symbols, size_t length_symbols);
 	unsigned char* view_tree();
 	T calculate_tree(T* value_arguments, unsigned char* arguments, size_t number_arguments);
-	void operator=(Tree<T>& tree);
+	void operator=(Tree<T>* tree);
 	void operator=(size_t i);
 	template<typename T> T operator[](size_t index);
 	Node<T>* operator[](size_t index);

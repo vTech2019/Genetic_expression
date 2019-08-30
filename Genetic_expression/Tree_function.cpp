@@ -1,4 +1,5 @@
-#include "Tree_function.h"
+
+#include "Header.h"
 
 template<class T>
 void Tree_genetic<T>::sort_tree()
@@ -20,6 +21,7 @@ void Tree_genetic<T>::sort_tree()
 		for (size_t j = 0; j < survival_rate[i] * 50; j++) {
 			info[j][i] = 46;
 		}
+		printf("%s\n", all_tree[i]->view_tree());
 	}
 	for (size_t i = 0; i < 50; i++)
 		if (info[0][i])
@@ -30,8 +32,10 @@ void Tree_genetic<T>::sort_tree()
 			tmp_arguments_function[j] += steps_arguments[j];
 	}
 	double value = tmp_arguments_function[result_symbol];
+	for (size_t i = 0; i < number_symbols; i++)
+		tmp_arguments_function[i] = arguments_function[i];
 	printf("value function %f\n", value);
-	printf("%s\n", all_tree[0]->view_tree());
+	//printf("%s\n", all_tree[0]->view_tree());
 }
 
 template<class T>
@@ -109,7 +113,7 @@ void Tree_genetic<T>::fitness()
 			//double value = tmp_arguments_function[result_symbol];
 			//for (size_t i = 0; i < number_symbols; i++)
 			//	tmp_arguments_function[i] = arguments_function[i];
-			//printf("%f\n", value);
+			printf("%f\n", survival_rate[i]);
 		}
 	}
 }
@@ -161,10 +165,16 @@ void Tree_genetic<T>::mutation()
 		size_t index_1 = get_random() % all_tree[i]->get_number_component_tree();
 		Node<T>* node = (*all_tree[i])[index_1];
 		if (node->stage == OPERATION) {
-			node->value = _list_operation[(get_random() % 4)];
+			size_t index = (get_random() % 4);
+			while (_list_operation[index] == node->value)
+				index = (get_random() % 4);
+			node->value = _list_operation[index];
 		}
 		else if (node->stage == NUMBER) {
-			node->value = (T)get_random(-99999.999999, 99999.999999);
+			T random_number = (T)get_random(-99999.999999, 99999.999999);
+			while (random_number == node->value)
+				random_number = (T)get_random(-99999.999999, 99999.999999);
+			node->value = random_number;
 		}
 		//printf("%s\n", all_tree[i]->view_tree());
 	}
@@ -180,11 +190,14 @@ T* Tree_genetic<T>::start_tree_genetic()
 		procreation = new Tree<T>[number_tree];
 		size_t y = 0;
 		while (y != 1000) {
+			//all_tree[0]->set_expression((unsigned char*) "((21471099638640898048.000000+(((207958440897685.687500*(((x*((y+x)/249547080859045.218750))-160114481265378.531250)/y))*(207958440897685.687500*(((x*(x/249547080859045.218750))-160114481265378.531250)/y)))+((163006364045689.437500*x)/(46485023228176580608.000000-281082064356422.187500))))+224637166321610.656250)" + 0, 0, (unsigned char*) "xy", 2);
 			for (size_t i = 0; i < number_tree; i++) {
+				printf("   %s\n", all_tree[i]->view_tree());
 				procreation[i] = *all_tree[i];
 			}
 			for (size_t i = 0; i < number_tree; i++) {
 				all_tree[i + number_tree] = &procreation[i];
+				printf(" %s\n", all_tree[i + number_tree]->view_tree());
 			}
 			crossing();
 			mutation();

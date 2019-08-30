@@ -1,4 +1,4 @@
-#include "Tree.h"
+#include "Header.h"
 
 template<class T>
 bool Tree<T>::flip(T number)
@@ -9,17 +9,26 @@ bool Tree<T>::flip(T number)
 	else
 		return false;
 }
-size_t get_random(){
+size_t get_random() {
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
-	static std::uniform_int_distribution<unsigned long long> dis(0, INT64_MAX);
+	std::uniform_int_distribution<unsigned long long> dis(0, UINT64_MAX);
 	return dis(gen);
 }
 double get_random(double min, double max) {
-	return (max - min) * ((double)get_random() / (double)RAND_MAX);
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::uniform_real_distribution<double> dis(min, max);
+	return dis(gen);
+}
+float get_random(float min, float max) {
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> dis(min, max);
+	return dis(gen);
 }
 template<class T>
-T Tree<T>::parse_number(unsigned char* string, unsigned char& number) {
+T Tree<T>::parse_number(unsigned char*& string, unsigned char& number) {
 	T result = 0.0f;
 	ptrdiff_t integer_part = 0;
 	if (*string < '0' || *string > '9') {
@@ -52,7 +61,7 @@ size_t Tree<T>::get_number_component_tree()
 	if (number_component_tree == 0) {
 		calculate_number_node();
 	}
-	return number_component_tree;
+	return number_component_tree - 1;
 }
 template<class T>
 void Tree<T>::set_expression(unsigned char* expression, size_t length_expression, unsigned char* symbols, size_t number_symbols)
@@ -124,7 +133,8 @@ void Tree<T>::set_expression(unsigned char* expression, size_t length_expression
 					else if (current_position->parent)
 						delete current,
 						current_position = current_position->parent;
-					start_expression++;
+					if (number_or_symbol)
+						start_expression++;
 				}
 				else
 					this->~Tree(),
@@ -175,7 +185,6 @@ void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t 
 			length++;
 			if (max_length < length) {
 				this->~Tree();
-				*this = 0;
 				_list_stage = OPERATION;
 				current_position = NULL;
 				length = 0;
@@ -248,7 +257,6 @@ void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t 
 		} while (!current_position->left || !current_position->right || current_position->parent);
 		if (number_index_symbols != number_symbols) {
 			this->~Tree();
-			*this = 0;
 			_list_stage = OPERATION;
 			current_position = NULL;
 			length = 0;
@@ -514,7 +522,7 @@ T Tree<T>::calculate_tree(T* value_arguments, unsigned char* arguments, size_t n
 	return result;
 }
 template<class T>
-void Tree<T>::operator=(Tree<T>& tree)
+void Tree<T>::operator=(Tree<T>* tree)
 {
 	this->~Tree();
 	number_component_tree = 0;
@@ -523,13 +531,13 @@ void Tree<T>::operator=(Tree<T>& tree)
 	Node<T>** memory_copy = NULL;
 	Node<T>** memory_next = NULL;
 	Node<T>** memory_copy_next = NULL;
-	if (tree.root) {
+	if (tree->root) {
 		number_component_tree++;
 		memory = (Node<T> * *) realloc(memory, N * sizeof(Node<T> * *));
 		memory_copy = (Node<T> * *) realloc(memory_copy, N * sizeof(Node<T> * *));
 		memory_next = (Node<T> * *) realloc(memory_next, 2 * N * sizeof(Node<T> * *));
 		memory_copy_next = (Node<T> * *) realloc(memory_copy_next, 2 * N * sizeof(Node<T> * *));
-		memory[0] = tree.root;
+		memory[0] = tree->root;
 		memory_copy[0] = new Node<T>(memory[0]->value, memory[0]->stage, NULL, NULL, NULL);
 		root = memory_copy[0];
 		size_t number = 1;

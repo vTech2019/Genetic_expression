@@ -162,10 +162,17 @@
     <ClCompile Include="Genetic_expression.cpp" />
     <ClCompile Include="Tree.cpp" />
     <ClCompile Include="Tree_function.cpp" />
+    <ClCompile Include="WinApi.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Header.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Tree.h" />
     <ClInclude Include="Tree_function.h" />
+    <ClInclude Include="WinApi.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Genetic_expression.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,5 +1,4 @@
 #pragma once
-#include "Tree.h"
 template<class T>
 class Tree_genetic 
 {
