@@ -1,41 +1,13 @@
-
 #include "Header.h"
 
 template<class T>
-void Tree_genetic<T>::sort_tree()
+void Tree_genetic<T>::push_tree(Tree<T>* ptr_tree)
 {
-	unsigned char info[50][2 * 100] = { 0 };
-	for (size_t i = 0; i <2 *  number_tree; i++) {
-		for (size_t j = i; j < 2 * number_tree; j++) {
-			if (survival_rate[i] < survival_rate[j]) {
-				Tree<T>* tmp_tree = all_tree[i];
-				all_tree[i] = all_tree[j];
-				all_tree[j] = tmp_tree;
-				double tmp_rate = survival_rate[i];
-				survival_rate[i] = survival_rate[j];
-				survival_rate[j] = tmp_rate;
-			}
-		}
-	}
-	for (size_t i = 0; i < 2 * number_tree; i++) {
-		for (size_t j = 0; j < survival_rate[i] * 50; j++) {
-			info[j][i] = 46;
-		}
-		printf("%s\n", all_tree[i]->view_tree());
-	}
-	for (size_t i = 0; i < 50; i++)
-		if (info[0][i])
-			printf("%s\n", info[i]);
-	for (size_t i = 0; i < number_iterations; i++) {
-		tmp_arguments_function[result_symbol] = all_tree[0]->calculate_tree(tmp_arguments_function, symbols_function, number_symbols);
-		for (size_t j = 0; j < number_symbols; j++)
-			tmp_arguments_function[j] += steps_arguments[j];
-	}
-	double value = tmp_arguments_function[result_symbol];
-	for (size_t i = 0; i < number_symbols; i++)
-		tmp_arguments_function[i] = arguments_function[i];
-	printf("value function %f\n", value);
-	//printf("%s\n", all_tree[0]->view_tree());
+	number_tree++;
+	survival_rate = (double*)realloc(survival_rate, (number_tree * 2) * sizeof(double));
+	all_tree = (Tree<T> * *)realloc(all_tree, (number_tree * 2) * sizeof(Tree<T>*));
+	if (all_tree)
+		all_tree[number_tree - 1] = ptr_tree;
 }
 
 template<class T>
@@ -59,12 +31,42 @@ void Tree_genetic<T>::set_arguments(T* arguments, unsigned char* symbols, size_t
 }
 
 template<class T>
-void Tree_genetic<T>::push_tree(Tree<T>* ptr_tree)
+void Tree_genetic<T>::set_main(Tree<T>* main_tree)
 {
-	survival_rate = (double*)realloc(survival_rate, (number_tree + 1) * sizeof(double));
-	all_tree = (Tree<T> * *)realloc(all_tree, (number_tree + 1) * sizeof(Tree<T> * *));
-	all_tree[number_tree] = ptr_tree;
-	number_tree++;
+	this->main_tree = main_tree;
+}
+
+
+
+template<class T>
+void Tree_genetic<T>::sort_tree()
+{
+	unsigned char info[2 * 100][50] = { 0 };
+	for (size_t i = 0; i < 2 * number_tree; i++) {
+		for (size_t j = i; j < 2 * number_tree; j++) {
+			if (survival_rate[i] < survival_rate[j]) {
+				Tree<T>* tmp_tree = all_tree[i];
+				all_tree[i] = all_tree[j];
+				all_tree[j] = tmp_tree;
+				double tmp_rate = survival_rate[i];
+				survival_rate[i] = survival_rate[j];
+				survival_rate[j] = tmp_rate;
+			}
+		}
+	}
+	for (size_t i = 0; i < 2 * number_tree; i++) {
+		for (size_t j = 0; j < survival_rate[i] * 50; j++) {
+			info[i][j] = 46;
+		}
+		printf("%s\n", all_tree[i]->view_tree());
+	}
+	for (size_t i = 0; i < 2 * number_tree; i++) {
+		if (info[i])
+			printf("%s\n", info[i]);
+	}
+	//printf("%s\n", all_tree[0]->view_tree());
+	for (size_t i = 0; i < 2 * number_tree; i++) 
+	printf("value function %f\n", calculate_function(i));
 }
 
 template<class T>
@@ -85,43 +87,22 @@ void Tree_genetic<T>::fitness()
 	if (arguments_function) {
 		double div = 0.0f;
 		for (size_t i = 0; i < 2 * number_tree; i++) {
-			for (size_t j = 0; j < number_iterations; j++) {
-				tmp_arguments_function[result_symbol] = all_tree[i]->calculate_tree(tmp_arguments_function, symbols_function, number_symbols);
-				for (size_t j = 0; j < number_symbols; j++)
-					tmp_arguments_function[j] += steps_arguments[j];
-			}
-			if (!isnan((double)tmp_arguments_function[result_symbol])) {
-				survival_rate[i] = (double)value - tmp_arguments_function[result_symbol];
+			T result = calculate_function(i);
+			if (!isnan((double)result)) {
+				survival_rate[i] = (double)value - result;
 				if (survival_rate[i] < 0)
 					survival_rate[i] = -survival_rate[i];
 				div += 1.0 / survival_rate[i];
 			}
 			else {
-				survival_rate[i] = 0xffffffffffffffff;
+				survival_rate[i] = DBL_MAX;
 			}
-			for (size_t i = 0; i < number_symbols; i++)
-				tmp_arguments_function[i] = arguments_function[i];
 		}
 		for (size_t i = 0; i < 2 * number_tree; i++) {
 			survival_rate[i] = (1 / survival_rate[i]) / div;
-			//printf("survival rate %f\n", survival_rate[i]);
-			//for (size_t k = 0; k < number_iterations; k++) {
-			//	tmp_arguments_function[result_symbol] = all_tree[i]->calculate_tree(tmp_arguments_function, symbols_function, number_symbols);
-			//	for (size_t j = 0; j < number_symbols; j++)
-			//		tmp_arguments_function[j] += steps_arguments[j];
-			//}
-			//double value = tmp_arguments_function[result_symbol];
-			//for (size_t i = 0; i < number_symbols; i++)
-			//	tmp_arguments_function[i] = arguments_function[i];
 			printf("%f\n", survival_rate[i]);
 		}
 	}
-}
-
-template<class T>
-void Tree_genetic<T>::set_main(Tree<T>* main_tree)
-{
-	this->main_tree = main_tree;
 }
 
 template<class T>
@@ -171,37 +152,51 @@ void Tree_genetic<T>::mutation()
 			node->value = _list_operation[index];
 		}
 		else if (node->stage == NUMBER) {
-			T random_number = (T)get_random(-99999.999999, 99999.999999);
+			T random_number = (T)get_random(-999.999999, 999.999999);
 			while (random_number == node->value)
-				random_number = (T)get_random(-99999.999999, 99999.999999);
+				random_number = (T)get_random(-999.999999, 999.999999);
 			node->value = random_number;
 		}
+		else
+			i--;
 		//printf("%s\n", all_tree[i]->view_tree());
 	}
+}
+
+template<class T>
+T Tree_genetic<T>::calculate_function(size_t index_function)
+{
+	for (size_t i = 0; i < number_iterations; i++) {
+		tmp_arguments_function[result_symbol] = all_tree[index_function]->calculate_tree(tmp_arguments_function, symbols_function, number_symbols);
+		for (size_t j = 0; j < number_symbols; j++)
+			tmp_arguments_function[j] += steps_arguments[j];
+	}
+	T value = tmp_arguments_function[result_symbol];
+	for (size_t i = 0; i < number_symbols; i++)
+		tmp_arguments_function[i] = arguments_function[i];
+	return value;
 }
 
 template<class T>
 T* Tree_genetic<T>::start_tree_genetic()
 {
 	if (arguments_function && symbols_function && all_tree) {
-		number_tree;
-		survival_rate = (double*)realloc(survival_rate, (number_tree * 2) * sizeof(double));
-		all_tree = (Tree<T> * *)realloc(all_tree, (number_tree * 2) * sizeof(Tree<T> * *));
 		procreation = new Tree<T>[number_tree];
 		size_t y = 0;
 		while (y != 1000) {
-			//all_tree[0]->set_expression((unsigned char*) "((21471099638640898048.000000+(((207958440897685.687500*(((x*((y+x)/249547080859045.218750))-160114481265378.531250)/y))*(207958440897685.687500*(((x*(x/249547080859045.218750))-160114481265378.531250)/y)))+((163006364045689.437500*x)/(46485023228176580608.000000-281082064356422.187500))))+224637166321610.656250)" + 0, 0, (unsigned char*) "xy", 2);
 			for (size_t i = 0; i < number_tree; i++) {
-				printf("   %s\n", all_tree[i]->view_tree());
 				procreation[i] = *all_tree[i];
-			}
-			for (size_t i = 0; i < number_tree; i++) {
 				all_tree[i + number_tree] = &procreation[i];
-				printf(" %s\n", all_tree[i + number_tree]->view_tree());
 			}
 			crossing();
-			mutation();
+			mutation();	
+			//for (size_t i = 0; i < 2 * number_tree; i++) {
+			//	printf("   %s\n", all_tree[i]->view_tree());
+			//}
 			fitness();
+			for (size_t i = 0; i < 2 * number_tree; i++) {
+				printf("   %s\n", all_tree[i]->view_tree());
+			}
 			sort_tree();
 			y++;
 		}

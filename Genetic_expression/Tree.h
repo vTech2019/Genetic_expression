@@ -46,7 +46,7 @@ class Tree
 public:
 	size_t get_number_component_tree();
 	void set_expression(unsigned char* expression, size_t length_expression, unsigned char* symbols, size_t number_symbols);
-	void gen_random_tree(size_t max_length, unsigned char* symbols, size_t length_symbols);
+	void gen_random_tree(size_t max_length, unsigned char* symbols, size_t length_symbols, T min, T max);
 	unsigned char* view_tree();
 	T calculate_tree(T* value_arguments, unsigned char* arguments, size_t number_arguments);
 	void operator=(Tree<T>* tree);

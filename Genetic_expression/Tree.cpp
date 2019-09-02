@@ -171,7 +171,7 @@ void Tree<T>::set_expression(unsigned char* expression, size_t length_expression
 }
 
 template<class T>
-void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t number_symbols)
+void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t number_symbols, T min, T max)
 {
 	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
 	number_component_tree = 0;
@@ -234,7 +234,7 @@ void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t 
 							number_index_symbols++;
 					}
 					else {
-						T number = (T)get_random() / RAND_MAX;
+						T number = get_random(min, max); 
 						current = new Node<T>(number, NUMBER, NULL, NULL, current_position);
 					}
 				}
@@ -714,15 +714,15 @@ void TreeFunction()
 	Tree<double> tree_double;
 	tree_float.operator=(tree_float);
 	tree_float.calculate_tree(NULL, NULL, NULL);
-	tree_float.gen_random_tree(NULL, NULL, NULL);
+	tree_float.gen_random_tree(NULL, NULL, NULL, NULL, NULL);
 	//	tree_float.set_expression(NULL, NULL, NULL, NULL);
 	tree_float.view_tree();
 	tree_int.calculate_tree(NULL, NULL, NULL);
-	tree_int.gen_random_tree(NULL, NULL, NULL);
+	//tree_int.gen_random_tree(NULL, NULL, NULL);
 	//	tree_int.set_expression(NULL, NULL, NULL, NULL);
 	tree_int.view_tree();
 	tree_double.calculate_tree(NULL, NULL, NULL);
-	tree_double.gen_random_tree(NULL, NULL, NULL);
+	tree_double.gen_random_tree(NULL, NULL, NULL, NULL, NULL);
 	tree_double.set_expression(NULL, NULL, NULL, NULL);
 	tree_double.view_tree();
 	tree_double.operator=(tree_double);

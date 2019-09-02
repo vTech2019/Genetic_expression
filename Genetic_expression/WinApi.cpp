@@ -64,26 +64,35 @@ LRESULT CALLBACK DlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg)
 	{
 	case WM_INITDIALOG: {
-
 		pParam = (Parameters*)lParam;
 		return TRUE;
 	}
-
 
 	case WM_COMMAND:
 		switch (LOWORD(wParam))
 		{
 		case IDOK: {
-
 			HWND edit = GetDlgItem(hwnd, IDC_EDIT_FUNCTION);
+			HWND edit_symbols = GetDlgItem(hwnd, IDC_EDIT_SYMBOLS);
 			size_t length = Edit_GetTextLength(edit);
+			size_t length_symbols = Edit_GetTextLength(edit_symbols);
 			HLOCAL local_memory = LocalAlloc(LMEM_MOVEABLE | LMEM_DISCARDABLE, length);
-			TCHAR* memory = (TCHAR*)LocalLock(local_memory);
-			Edit_GetText(edit, memory, length);
-			LocalUnlock(local_memory);
-			local_memory = LocalFree(local_memory);
-			//OnOK(hwnd, pParam);
-			EndDialog(hwnd, LOWORD(wParam));
+			HLOCAL local_memory_symbols = LocalAlloc(LMEM_MOVEABLE | LMEM_DISCARDABLE, length_symbols);
+			if (local_memory && local_memory_symbols) {
+				TCHAR* memory = (TCHAR*)LocalLock(local_memory);
+				TCHAR* memory_symbols = (TCHAR*)LocalLock(local_memory_symbols);
+				Edit_GetText(edit, memory, length);
+				Edit_GetText(edit_symbols, memory_symbols, length_symbols);
+
+				LocalUnlock(local_memory);
+				LocalUnlock(local_memory_symbols);
+				local_memory = LocalFree(local_memory);
+				local_memory_symbols = LocalFree(local_memory_symbols);
+				EndDialog(hwnd, LOWORD(wParam));
+			}
+			else			{
+
+			}
 			return TRUE;
 		}
 
