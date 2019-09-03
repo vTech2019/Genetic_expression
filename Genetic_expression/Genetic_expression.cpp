@@ -13,7 +13,7 @@ int main()
 	double step_argument[] = { 4, 0 };
 	size_t max_length_expression = 64;
 	size_t number_expression = 2;
-	size_t number_iterations = 160000;
+	size_t number_iterations = 160;
 	Tree<double> function;
 	function.set_expression((unsigned char*) "(((1/x)-(1/(x+2)))+y)" + 0, 0, (unsigned char*) "xy", 2);
 	std::cout << function.view_tree() << std::endl;
@@ -36,6 +36,4 @@ int main()
 		genetic_function.push_tree(&tree[i]);
 	genetic_function.start_tree_genetic();
 	delete[] tree;
-	while (true)
-		std::cout << "Hello World!\n";
 }

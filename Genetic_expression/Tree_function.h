@@ -14,6 +14,8 @@ class Tree_genetic
 	size_t result_symbol;
 	double* survival_rate;
 	unsigned char* symbols_function;
+	T max_generation;
+	T min_generation;
 	void sort_tree();
 	void fitness();
 	void crossing();

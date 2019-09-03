@@ -36,12 +36,10 @@ void Tree_genetic<T>::set_main(Tree<T>* main_tree)
 	this->main_tree = main_tree;
 }
 
-
-
 template<class T>
 void Tree_genetic<T>::sort_tree()
 {
-	unsigned char info[2 * 100][50] = { 0 };
+	//unsigned char info[2 * 100][50] = { 0 };
 	for (size_t i = 0; i < 2 * number_tree; i++) {
 		for (size_t j = i; j < 2 * number_tree; j++) {
 			if (survival_rate[i] < survival_rate[j]) {
@@ -54,19 +52,19 @@ void Tree_genetic<T>::sort_tree()
 			}
 		}
 	}
-	for (size_t i = 0; i < 2 * number_tree; i++) {
-		for (size_t j = 0; j < survival_rate[i] * 50; j++) {
-			info[i][j] = 46;
-		}
-		printf("%s\n", all_tree[i]->view_tree());
-	}
-	for (size_t i = 0; i < 2 * number_tree; i++) {
-		if (info[i])
-			printf("%s\n", info[i]);
-	}
+	//for (size_t i = 0; i < 2 * number_tree; i++) {
+	//	for (size_t j = 0; j < survival_rate[i] * 50; j++) {
+	//		info[i][j] = 46;
+	//	}
+	//	printf("%s\n", all_tree[i]->view_tree());
+	//}
+	//for (size_t i = 0; i < 2 * number_tree; i++) {
+	//	if (info[i])
+	//		printf("%s\n", info[i]);
+	//}
 	//printf("%s\n", all_tree[0]->view_tree());
-	for (size_t i = 0; i < 2 * number_tree; i++) 
-	printf("value function %f\n", calculate_function(i));
+	for (size_t i = 0; i < 2 * number_tree; i++)
+		printf("value function %f\n", calculate_function(i));
 }
 
 template<class T>
@@ -80,23 +78,21 @@ void Tree_genetic<T>::fitness()
 				tmp_arguments_function[j] += steps_arguments[j];
 		}
 		value = tmp_arguments_function[result_symbol];
+		memcpy(tmp_arguments_function, arguments_function, number_symbols * sizeof * tmp_arguments_function);
 	}
 
-	for (size_t i = 0; i < number_symbols; i++)
-		tmp_arguments_function[i] = arguments_function[i];
 	if (arguments_function) {
 		double div = 0.0f;
 		for (size_t i = 0; i < 2 * number_tree; i++) {
 			T result = calculate_function(i);
 			if (!isnan((double)result)) {
 				survival_rate[i] = (double)value - result;
-				if (survival_rate[i] < 0)
-					survival_rate[i] = -survival_rate[i];
-				div += 1.0 / survival_rate[i];
+				if (survival_rate[i] < 0)	survival_rate[i] = -survival_rate[i];
 			}
 			else {
 				survival_rate[i] = DBL_MAX;
 			}
+			div += 1.0 / survival_rate[i];
 		}
 		for (size_t i = 0; i < 2 * number_tree; i++) {
 			survival_rate[i] = (1 / survival_rate[i]) / div;
@@ -111,8 +107,8 @@ void Tree_genetic<T>::crossing()
 	for (size_t i = number_tree; i < 2 * number_tree; i += 2) {
 		//printf("%s\n", all_tree[i]->view_tree());
 		//printf("%s\n", all_tree[i+1]->view_tree());
-		size_t index_1 = get_random() % all_tree[i]->get_number_component_tree();
-		size_t index_2 = get_random() % all_tree[i + 1]->get_number_component_tree();
+		size_t index_1 = get_random(0, all_tree[i]->get_number_component_tree() - 1);
+		size_t index_2 = get_random(0, all_tree[i + 1]->get_number_component_tree() - 1);
 		Node<T>* node_1 = (*all_tree[i])[index_1];
 		Node<T>* node_2 = (*all_tree[i + 1])[index_2];
 		if (node_1->parent && node_2->parent) {
@@ -140,21 +136,20 @@ void Tree_genetic<T>::crossing()
 template<class T>
 void Tree_genetic<T>::mutation()
 {
-	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
+	const uint8_t _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
 	for (size_t i = number_tree; i < 2 * number_tree; i++) {
-		//printf("%s\n", all_tree[i]->view_tree());
-		size_t index_1 = get_random() % all_tree[i]->get_number_component_tree();
+		int index_1 = get_random(0, all_tree[i]->get_number_component_tree() - 1);
 		Node<T>* node = (*all_tree[i])[index_1];
 		if (node->stage == OPERATION) {
-			size_t index = (get_random() % 4);
+			int index = get_random(0, sizeof(_list_operation) - 1);
 			while (_list_operation[index] == node->value)
-				index = (get_random() % 4);
+				index = get_random(0, sizeof(_list_operation) - 1);
 			node->value = _list_operation[index];
 		}
 		else if (node->stage == NUMBER) {
-			T random_number = (T)get_random(-999.999999, 999.999999);
+			T random_number = (T)get_random(min_generation, max_generation);
 			while (random_number == node->value)
-				random_number = (T)get_random(-999.999999, 999.999999);
+				random_number = (T)get_random(min_generation, max_generation);
 			node->value = random_number;
 		}
 		else
@@ -182,21 +177,18 @@ T* Tree_genetic<T>::start_tree_genetic()
 {
 	if (arguments_function && symbols_function && all_tree) {
 		procreation = new Tree<T>[number_tree];
+		for (size_t i = 0; i < number_tree; i++) {
+			procreation[i] = *all_tree[i];
+			all_tree[i + number_tree] = &procreation[i];
+		}
 		size_t y = 0;
-		while (y != 1000) {
-			for (size_t i = 0; i < number_tree; i++) {
-				procreation[i] = *all_tree[i];
-				all_tree[i + number_tree] = &procreation[i];
-			}
-			crossing();
-			mutation();	
-			//for (size_t i = 0; i < 2 * number_tree; i++) {
-			//	printf("   %s\n", all_tree[i]->view_tree());
-			//}
-			fitness();
+		while (y != 1000000000) {
+			//crossing();
+			mutation();
 			for (size_t i = 0; i < 2 * number_tree; i++) {
 				printf("   %s\n", all_tree[i]->view_tree());
 			}
+			fitness();
 			sort_tree();
 			y++;
 		}
@@ -209,6 +201,8 @@ Tree_genetic<T>::Tree_genetic()
 {
 	for (size_t i = 0; i < sizeof(*this); i++)
 		((char*)this)[i] = 0;
+	max_generation = 999.999;
+	min_generation = -999.999;
 }
 
 template<class T>
@@ -231,7 +225,6 @@ Tree_genetic<T>::~Tree_genetic()
 void GeneticFunction()
 {
 	Tree_genetic<float> tree_float;
-	Tree_genetic<int> tree_int;
 	Tree_genetic<double> tree_double;
 	tree_double.push_tree(NULL);
 	tree_double.set_arguments(NULL, NULL, NULL, NULL, NULL, NULL);

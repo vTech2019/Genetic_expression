@@ -1,18 +1,9 @@
 #include "Header.h"
 
-template<class T>
-bool Tree<T>::flip(T number)
-{
-	T random = (T)rand() / RAND_MAX;
-	if (random < number)
-		return true;
-	else
-		return false;
-}
-size_t get_random() {
+int get_random(int min, int max) {
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
-	std::uniform_int_distribution<unsigned long long> dis(0, UINT64_MAX);
+	std::uniform_int_distribution<int> dis(min, max);
 	return dis(gen);
 }
 double get_random(double min, double max) {
@@ -26,6 +17,15 @@ float get_random(float min, float max) {
 	static std::mt19937 gen(rd());
 	std::uniform_real_distribution<float> dis(min, max);
 	return dis(gen);
+}
+template<class T>
+bool Tree<T>::flip(T number)
+{
+	T random = (T)rand() / RAND_MAX;
+	if (random < number)
+		return true;
+	else
+		return false;
 }
 template<class T>
 T Tree<T>::parse_number(unsigned char*& string, unsigned char& number) {
@@ -173,7 +173,7 @@ void Tree<T>::set_expression(unsigned char* expression, size_t length_expression
 template<class T>
 void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t number_symbols, T min, T max)
 {
-	const unsigned char _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
+	const uint8_t _list_operation[] = { MINUS, PLUS, MULTIPLY, DIVIDE };
 	number_component_tree = 0;
 	ptrdiff_t  _list_stage = OPERATION;
 	Node<T>* current_position = NULL;
@@ -193,7 +193,7 @@ void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t 
 			switch (_list_stage) {
 			case OPERATION: {
 				_list_stage = flip(0.5f) ? OPERATION : NUMBER;
-				size_t index = (get_random() % (sizeof(_list_operation) / sizeof(*_list_operation)));
+				size_t index = get_random(0, sizeof(_list_operation) - 1);
 				if (current_position) {
 					if (!current_position->left)
 						number_component_tree++,
@@ -221,7 +221,7 @@ void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t 
 				Node<T>* current = (Node<T>*)(!current_position->left | !current_position->right);
 				if (current) {
 					if (flip(0.5f) && number_symbols) {
-						size_t index = get_random() % number_symbols;
+						size_t index = get_random(0, number_symbols - 1);
 						current = new Node<T>(symbols[index], SYMBOL, NULL, NULL, current_position);
 						bool find_symbol = false;
 						for (size_t i = 0; i < number_index_symbols; i++) {
@@ -234,7 +234,7 @@ void Tree<T>::gen_random_tree(size_t max_length, unsigned char* symbols, size_t 
 							number_index_symbols++;
 					}
 					else {
-						T number = get_random(min, max); 
+						T number = get_random(min, max);
 						current = new Node<T>(number, NUMBER, NULL, NULL, current_position);
 					}
 				}
@@ -321,7 +321,10 @@ unsigned char* Tree<T>::string_current_stage(unsigned char* ptr_expression, Node
 	case NUMBER: {
 		char number[32] = { 0 };
 		char* ptr_number = number;
-		sprintf_s(number, 32, "%f", current_position->value);
+		if (sizeof(T) == sizeof(double))
+			sprintf_s(number, sizeof(number), "%lf", current_position->value);
+		else if (sizeof(T) == sizeof(float))
+			sprintf_s(number, sizeof(number), "%f", current_position->value);
 		while (*ptr_number != 0) {
 			*ptr_expression++ = *ptr_number++;
 			ptr_expression = bound_check_expression(ptr_expression);
@@ -710,17 +713,12 @@ Tree<T>::~Tree()
 void TreeFunction()
 {
 	Tree<float> tree_float;
-	Tree<int> tree_int;
 	Tree<double> tree_double;
 	tree_float.operator=(tree_float);
 	tree_float.calculate_tree(NULL, NULL, NULL);
 	tree_float.gen_random_tree(NULL, NULL, NULL, NULL, NULL);
 	//	tree_float.set_expression(NULL, NULL, NULL, NULL);
 	tree_float.view_tree();
-	tree_int.calculate_tree(NULL, NULL, NULL);
-	//tree_int.gen_random_tree(NULL, NULL, NULL);
-	//	tree_int.set_expression(NULL, NULL, NULL, NULL);
-	tree_int.view_tree();
 	tree_double.calculate_tree(NULL, NULL, NULL);
 	tree_double.gen_random_tree(NULL, NULL, NULL, NULL, NULL);
 	tree_double.set_expression(NULL, NULL, NULL, NULL);
